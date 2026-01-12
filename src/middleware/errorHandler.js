@@ -13,6 +13,6 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   res.status(500).json({
-    error: isProduction ? 'Something went wrong' : err.message,
+    message: isProduction ? 'Something went wrong' : err.message,
   });
 };
