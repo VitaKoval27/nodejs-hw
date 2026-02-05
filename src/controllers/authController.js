@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import { createSession } from '../services/auth.js';
 import { Session } from '../models/session.js';
 import { setSessionCookies } from '../services/auth.js';
-import { sendEmail } from '../utils/sendEmail.js';
+import { sendMail } from '../utils/sendMail.js';
 import jwt from 'jsonwebtoken';
 import handlebars from 'handlebars';
 import path from 'node:path';
@@ -99,14 +99,14 @@ export const requestResetEmail = async (req, res, next) => {
 
   const html = template({
     name: user.username || user.email || 'User',
-    link: `${process.env.FRONTEND_DOMAIN}/reset-password-email?token=${resetToken}`,
+    link: `${process.env.FRONTEND_DOMAIN}/reset-password?token=${resetToken}`,
   });
   console.log(user);
   console.log(html);
 
   try {
-    await sendEmail({
-      from: process.env.SMTP_USER,
+    await sendMail({
+      from: process.env.SMTP_FROM,
       to: email,
       subject: 'Reset your password',
       html: html,
@@ -129,7 +129,7 @@ export const resetPassword = async (req, res, next) => {
   try {
     payload = jwt.verify(token, process.env.JWT_SECRET);
   } catch {
-    next(createHttpError(400, 'Invalid or expired token'));
+    next(createHttpError(401, 'Invalid or expired token'));
     return;
   }
   const user = await User.findOne({ _id: payload.sub, email: payload.email });
@@ -137,10 +137,14 @@ export const resetPassword = async (req, res, next) => {
     return next(createHttpError(404, 'User not found'));
   }
   const hashedPassword = await bcrypt.hash(password, 10);
-  await User.updateOne({
-    _id: user._id,
-    password: hashedPassword,
-  });
+  await User.updateOne(
+    {
+      _id: user._id,
+    },
+    {
+      password: hashedPassword,
+    },
+  );
   await Session.deleteMany({ userId: user._id });
   res.status(200).json({
     message: 'Password reset succeffully',
