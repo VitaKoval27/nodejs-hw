@@ -27,7 +27,7 @@ export const registerUser = async (req, res, next) => {
 };
 
 export const loginUser = async (req, res, next) => {
-  const { email, password } = await req.body;
+  const { email, password } = req.body;
   const user = await User.findOne({ email });
   if (!user) {
     return next(createHttpError(401, 'Invalid credentials'));
@@ -101,8 +101,6 @@ export const requestResetEmail = async (req, res, next) => {
     name: user.username || user.email || 'User',
     link: `${process.env.FRONTEND_DOMAIN}/reset-password?token=${resetToken}`,
   });
-  console.log(user);
-  console.log(html);
 
   try {
     await sendMail({
@@ -111,8 +109,7 @@ export const requestResetEmail = async (req, res, next) => {
       subject: 'Reset your password',
       html: html,
     });
-  } catch (error) {
-    console.error(error);
+  } catch {
     next(
       createHttpError(500, 'Failed to send the email, please try again later'),
     );
